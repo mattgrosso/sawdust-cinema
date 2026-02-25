@@ -4,32 +4,35 @@
       <img src="@/assets/sawdust-cinema-logo.png" alt="Sawdust Cinema" class="hero-logo" />
     </div>
 
-    <div class="container py-5 schedule-section">
-      <div class="d-flex align-items-center justify-content-between mb-4">
-        <h2 class="mb-0">Schedule</h2>
+    <div class="schedule-section">
+      <div class="schedule-inner">
+      <div class="d-flex justify-content-center mb-4">
         <button class="btn btn-primary" @click="openModal()">Reserve Your Seats</button>
       </div>
 
-      <div class="poster-grid">
-        <div v-for="showing in schedule" :key="showing.id" class="poster-card" @click="openModal(showing.id)">
-          <div class="poster-img-wrap">
-            <img :src="showing.poster" :alt="showing.movie" class="poster-img" />
-            <div class="poster-overlay">
-              <span v-if="isFull(showing.id)" class="badge bg-danger">Squeeze in!</span>
-              <span v-else-if="isAlmostFull(showing.id)" class="badge bg-warning text-dark">
-                {{ spotsRemaining[showing.id] }} left
-              </span>
-              <span v-else class="badge bg-success">
-                {{ spotsRemaining[showing.id] }} available
-              </span>
+      <div v-for="group in scheduleByDate" :key="group.date" class="day-section">
+        <h3 class="day-heading">{{ group.date }}</h3>
+        <div class="poster-grid">
+          <div v-for="showing in group.showings" :key="showing.id" class="poster-card" @click="openModal(showing.id)">
+            <div class="poster-img-wrap">
+              <img :src="showing.poster" :alt="showing.movie" class="poster-img" />
+              <div class="poster-overlay">
+                <span v-if="isFull(showing.id)" class="badge bg-danger">Squeeze in!</span>
+                <span v-else-if="isAlmostFull(showing.id)" class="badge bg-warning text-dark">
+                  {{ spotsRemaining[showing.id] }} left
+                </span>
+                <span v-else class="badge bg-success">
+                  {{ spotsRemaining[showing.id] }} available
+                </span>
+              </div>
+            </div>
+            <div class="poster-info">
+              <h5>{{ showing.movie }}</h5>
+              <p>{{ showing.time }}<span v-if="showing.runtime" class="runtime"> · {{ showing.runtime }}</span></p>
             </div>
           </div>
-          <div class="poster-info">
-            <h5>{{ showing.movie }}</h5>
-            <p>{{ showing.date }}</p>
-            <p>{{ showing.time }}</p>
-          </div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -47,7 +50,19 @@ export default {
 
   computed: {
     ...mapState(['schedule']),
-    ...mapGetters({ spotsRemaining: 'spotsRemainingByShowing' })
+    ...mapGetters({ spotsRemaining: 'spotsRemainingByShowing' }),
+    scheduleByDate () {
+      const groups = []
+      this.schedule.forEach(showing => {
+        const last = groups[groups.length - 1]
+        if (last && last.date === showing.date) {
+          last.showings.push(showing)
+        } else {
+          groups.push({ date: showing.date, showings: [showing] })
+        }
+      })
+      return groups
+    }
   },
 
   methods: {
@@ -72,7 +87,7 @@ export default {
 <style lang="scss" scoped>
 .hero {
   background-color: #280003;
-  background-image: radial-gradient(ellipse 60% 180% at 50% -20%, rgba(176, 9, 14, 0.9) 0%, rgba(40, 0, 3, 0) 70%);
+  background-image: radial-gradient(ellipse 60% 180% at 50% -25%, rgba(176, 9, 14, 0.9) 0%, rgba(40, 0, 3, 0) 70%);
   background-size: 25% 100%;
   background-repeat: repeat-x;
   background-position: 50% 0;
@@ -89,11 +104,31 @@ export default {
 
 .schedule-section {
   background-color: #280003;
-  border-radius: 0;
+}
+
+.schedule-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
 }
 
 h2 {
   color: #fff;
+}
+
+.day-section {
+  margin-bottom: 2.5rem;
+}
+
+.day-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-tan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(212, 169, 122, 0.25);
 }
 
 .poster-grid {

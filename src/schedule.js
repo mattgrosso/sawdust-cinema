@@ -5,51 +5,66 @@
 const schedule = [
   {
     id: 'fri-eve',
-    movie: 'The Big Lebowski',
-    date: 'Friday, June 6',
-    time: '7:00 PM',
+    movie: 'Pirates of the Caribbean: The Curse of the Black Pearl',
+    date: 'Friday, March 20th',
+    time: '7:30 PM',
+    runtime: '2h 23m',
     capacity: 15,
-    poster: 'https://placebear.com/300/450'
+    poster: 'https://image.tmdb.org/t/p/w500/poHwCZeWzJCShH7tOjg8RIoyjcw.jpg'
   },
   {
-    id: 'sat-mat',
-    movie: 'Raising Arizona',
-    date: 'Saturday, June 7',
-    time: '2:00 PM',
+    id: 'fri-late',
+    movie: 'The Mask',
+    date: 'Friday, March 20th',
+    time: '10:15 PM',
+    runtime: '1h 41m',
     capacity: 15,
-    poster: 'https://placebear.com/301/450'
+    poster: 'https://image.tmdb.org/t/p/w500/jPC2eYub74zwf2tPGVtzSlBW6Oy.jpg'
   },
   {
-    id: 'sat-eve',
-    movie: 'No Country for Old Men',
-    date: 'Saturday, June 7',
-    time: '7:00 PM',
-    capacity: 15,
-    poster: 'https://placebear.com/302/450'
-  },
-  {
-    id: 'sun-morn',
-    movie: 'Fargo',
-    date: 'Sunday, June 8',
+    id: 'sat-morn',
+    movie: "Fantastic Mr. Fox",
+    date: 'Saturday, March 21st',
     time: '11:00 AM',
+    runtime: '1h 27m',
     capacity: 15,
-    poster: 'https://placebear.com/303/450'
+    poster: 'https://image.tmdb.org/t/p/w500/euZyZb6iGreujYKrGyZHRddhUYh.jpg'
+  },
+  {
+    id: 'sat-lunch',
+    movie: 'The Truman Show',
+    date: 'Saturday, March 21st',
+    time: '1:00 PM',
+    runtime: '1h 43m',
+    capacity: 15,
+    poster: 'https://image.tmdb.org/t/p/w500/vuza0WqY239yBXOadKlGwJsZJFE.jpg'
   },
   {
     id: 'sun-mat',
-    movie: 'Blood Simple',
-    date: 'Sunday, June 8',
-    time: '3:00 PM',
+    movie: 'Fried Green Tomatoes',
+    date: 'Saturday, March 21st',
+    time: '3:15 PM',
+    runtime: '2h 10m',
     capacity: 15,
-    poster: 'https://placebear.com/304/450'
+    poster: 'https://image.tmdb.org/t/p/w500/g71l1vbJwyAAYk8zKCkIQQ58qcb.jpg'
   },
   {
     id: 'sun-eve',
-    movie: "Miller's Crossing",
-    date: 'Sunday, June 8',
+    movie: 'Notting Hill',
+    date: 'Saturday, March 21st',
     time: '7:00 PM',
+    runtime: '2h 4m',
     capacity: 15,
-    poster: 'https://placebear.com/305/450'
+    poster: 'https://image.tmdb.org/t/p/w500/hHRIf2XHeQMbyRb3HUx19SF5Ujw.jpg'
+  },
+  {
+    id: 'sun-late',
+    movie: "The Hunt for Red October",
+    date: 'Saturday, March 21st',
+    time: '9:30 PM',
+    runtime: '2h 15m',
+    capacity: 15,
+    poster: 'https://image.tmdb.org/t/p/w500/yVl7zidse4KiWtGMqHFtZCx4X3N.jpg'
   }
 ]
 
