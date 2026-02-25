@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAhjnbSpqEqAd1MTuu3AsZmnlFQJoxSA9k',
-  authDomain: 'sawdust-cinema.firebaseapp.com',
-  projectId: 'sawdust-cinema',
-  storageBucket: 'sawdust-cinema.firebasestorage.app',
-  messagingSenderId: '1091670075793',
-  appId: '1:1091670075793:web:5e63724d85376f89811230',
-  databaseURL: 'https://sawdust-cinema-default-rtdb.firebaseio.com'
+  apiKey: process.env.VUE_APP_FIREBASE_API_KEY,
+  authDomain: process.env.VUE_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VUE_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VUE_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VUE_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VUE_APP_FIREBASE_APP_ID,
+  databaseURL: process.env.VUE_APP_FIREBASE_DATABASE_URL
 }
 
 const app = initializeApp(firebaseConfig)
