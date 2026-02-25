@@ -39,6 +39,7 @@
               <th>#</th>
               <th>Name</th>
               <th>Email</th>
+              <th>Seats</th>
               <th>Submitted</th>
             </tr>
           </thead>
@@ -47,6 +48,7 @@
               <td>{{ i + 1 }}</td>
               <td>{{ guest.name }}</td>
               <td>{{ guest.email }}</td>
+              <td>{{ seatsFor(guest, showing.id) }}</td>
               <td class="text-muted">{{ formatDate(guest.submittedAt) }}</td>
             </tr>
           </tbody>
@@ -89,7 +91,15 @@ export default {
     },
 
     guestsFor (showingId) {
-      return this.allReservations.filter(r => r.showingIds && r.showingIds.includes(showingId))
+      return this.allReservations.filter(r =>
+        (r.showings && r.showings[showingId]) ||
+        (r.showingIds && r.showingIds.includes(showingId))
+      )
+    },
+
+    seatsFor (guest, showingId) {
+      if (guest.showings) return guest.showings[showingId] || 1
+      return 1
     },
 
     countFor (showingId) {
@@ -115,3 +125,15 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+h2 {
+  color: var(--color-espresso);
+}
+
+h5 {
+  &.border-bottom {
+    border-color: var(--color-tan) !important;
+  }
+}
+</style>

@@ -8,6 +8,7 @@ export default createStore({
     schedule,
     reservations: {},
     rsvpModalOpen: false,
+    rsvpPreselect: null,
     submitSuccess: false
   },
 
@@ -16,7 +17,12 @@ export default createStore({
       const counts = {}
       schedule.forEach(s => { counts[s.id] = 0 })
       Object.values(state.reservations).forEach(reservation => {
-        if (reservation.showingIds) {
+        if (reservation.showings) {
+          Object.entries(reservation.showings).forEach(([id, seats]) => {
+            if (counts[id] !== undefined) counts[id] += seats
+          })
+        } else if (reservation.showingIds) {
+          // legacy support for old reservations without seat counts
           reservation.showingIds.forEach(id => {
             if (counts[id] !== undefined) counts[id]++
           })
@@ -25,7 +31,7 @@ export default createStore({
       return counts
     },
 
-    spotsRemainingByShowing: (state, getters) => {
+    spotsRemainingByShowing: (_state, getters) => {
       const remaining = {}
       schedule.forEach(s => {
         remaining[s.id] = s.capacity - (getters.reservationCountByShowing[s.id] || 0)
@@ -45,6 +51,9 @@ export default createStore({
     SET_RSVP_MODAL_OPEN (state, val) {
       state.rsvpModalOpen = val
     },
+    SET_RSVP_PRESELECT (state, showingId) {
+      state.rsvpPreselect = showingId
+    },
     SET_SUBMIT_SUCCESS (state, val) {
       state.submitSuccess = val
     }
@@ -58,12 +67,12 @@ export default createStore({
       })
     },
 
-    async submitReservation (_, { name, email, showingIds }) {
+    async submitReservation (_, { name, email, showings }) {
       const reservationsRef = ref(db, 'reservations')
       await push(reservationsRef, {
         name,
         email,
-        showingIds,
+        showings,
         submittedAt: new Date().toISOString()
       })
     }
