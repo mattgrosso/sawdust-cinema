@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/favicon.svg)",
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/favicon-96x96.png)",
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/favicon.ico)",
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/apple-touch-icon.png)",
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/web-app-manifest-192x192.png)",
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/web-app-manifest-512x512.png)",
+      "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/site.webmanifest)",
+      "Bash(ls -la favicon* apple-touch-icon.png web-app-manifest-*.png site.webmanifest)"
+    ]
+  }
+}
