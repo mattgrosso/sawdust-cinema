@@ -9,7 +9,16 @@
       "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/web-app-manifest-512x512.png)",
       "Bash(curl -sO https://realfavicongenerator.net/files/f9bb189a-b485-4f8e-b4c8-38af242186df/site.webmanifest)",
       "Bash(ls -la favicon* apple-touch-icon.png web-app-manifest-*.png site.webmanifest)",
-      "Bash(git rm --cached invalidation_output.txt)"
+      "Bash(git rm --cached invalidation_output.txt)",
+      "Bash(curl -I https://sawdustcinema.com/og-image.jpg)",
+      "Bash(aws s3 ls s3://sawdust-cinema/og-image.jpg --profile home)",
+      "Bash(aws cloudfront create-invalidation --distribution-id E1S2ZXGVHWW8OH --paths '/og-image.jpg' --profile home)",
+      "Bash(aws s3api get-object-acl --bucket sawdust-cinema --key index.html --profile home)",
+      "Bash(aws s3api get-bucket-policy --bucket sawdust-cinema --profile home)",
+      "Bash(curl -sI --max-time 10 https://dpjamgm53hi4i.cloudfront.net/og-image.jpg)",
+      "Bash(curl -sI --max-time 10 https://sawdustcinema.com/og-image.jpg)",
+      "Bash(dig sawdustcinema.com +short)",
+      "Bash(dig www.sawdustcinema.com +short)"
     ]
   }
 }

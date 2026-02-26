@@ -1,4 +1,5 @@
 <template>
+  <div class="admin-wrap">
   <div class="container py-5">
 
     <!-- Password gate -->
@@ -20,7 +21,7 @@
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Reservations</h2>
-        <button class="btn btn-outline-secondary btn-sm" @click="authenticated = false">Lock</button>
+        <button class="btn btn-outline-secondary btn-sm" @click="authenticated = false; localStorage.removeItem('admin_auth')">Lock</button>
       </div>
 
       <div v-for="showing in schedule" :key="showing.id" class="mb-5">
@@ -57,6 +58,7 @@
     </div>
 
   </div>
+  </div>
 </template>
 
 <script>
@@ -69,7 +71,7 @@ export default {
 
   data () {
     return {
-      authenticated: false,
+      authenticated: localStorage.getItem('admin_auth') === 'true',
       passwordInput: '',
       wrongPassword: false
     }
@@ -84,6 +86,7 @@ export default {
     checkPassword () {
       if (this.passwordInput === ADMIN_PASSWORD) {
         this.authenticated = true
+        localStorage.setItem('admin_auth', 'true')
         this.wrongPassword = false
       } else {
         this.wrongPassword = true
@@ -127,13 +130,57 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.admin-wrap {
+  min-height: 100vh;
+  background-color: #280003;
+}
+
 h2 {
-  color: var(--color-espresso);
+  color: #fff;
 }
 
 h5 {
+  color: var(--color-tan);
+
   &.border-bottom {
-    border-color: var(--color-tan) !important;
+    border-color: rgba(212, 169, 122, 0.25) !important;
+  }
+}
+
+.text-muted {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.fst-italic {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.form-label {
+  color: #fff;
+}
+
+.form-control {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #fff;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-color: #fff;
+  --bs-table-striped-color: #fff;
+  color: #fff;
+
+  thead th {
+    color: var(--color-tan);
+    border-color: rgba(212, 169, 122, 0.25);
+  }
+
+  td, th {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 }
 </style>
