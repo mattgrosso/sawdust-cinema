@@ -14,6 +14,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+invalidation_output.txt
+
 # Editor directories and files
 .idea
 .vscode
