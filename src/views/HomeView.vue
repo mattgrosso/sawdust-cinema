@@ -2,6 +2,9 @@
   <div class="home">
     <div class="hero text-center">
       <img src="@/assets/sawdust-cinema-logo.png" alt="Sawdust Cinema" class="hero-logo" />
+      <a href="https://maps.google.com/?q=3804+38th+St,+Brentwood,+MD+20722" target="_blank" rel="noopener" class="hero-address">
+        3804 38th St, Brentwood, MD 20722
+      </a>
     </div>
 
     <div class="schedule-section">
@@ -135,6 +138,17 @@ h2 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 2rem;
+}
+
+.hero-address {
+  display: block;
+  color: var(--color-tan);
+  font-size: 0.95rem;
+  text-decoration: none;
+
+  &:hover {
+    color: #fff;
+  }
 }
 
 .poster-card {
