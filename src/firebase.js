@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
+import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: process.env.VUE_APP_FIREBASE_API_KEY,
@@ -13,3 +14,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const db = getDatabase(app)
+
+// Auth exists only for the Admin page. Guests never sign in — the RSVP form
+// is deliberately anonymous, and the public schedule is public.
+export const auth = getAuth(app)
+export const googleProvider = new GoogleAuthProvider()
+
+// Who is allowed to see the guest list. Checked in the UI for a friendly
+// screen, and enforced for real in database.rules.json — this constant is in
+// the public bundle and is not a security boundary.
+export const ADMIN_EMAIL = 'mattgrosso@gmail.com'

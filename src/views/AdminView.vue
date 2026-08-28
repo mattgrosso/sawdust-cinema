@@ -2,18 +2,30 @@
   <div class="admin-wrap">
   <div class="container py-5">
 
-    <!-- Password gate -->
+    <!-- Sign-in gate. This used to be a password compared against a constant
+         compiled into the public bundle, which meant anyone who opened
+         devtools could read it — and, worse, the database had to stay open to
+         everyone for the admin to work at all. Google sign-in is what lets
+         the rules tell the owner apart from a stranger, so the guest list can
+         finally be private. -->
     <div v-if="!authenticated" class="row justify-content-center">
-      <div class="col-md-4">
+      <div class="col-md-5">
         <h2 class="mb-4">Admin</h2>
-        <form @submit.prevent="checkPassword">
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input v-model="passwordInput" type="password" class="form-control" autofocus />
-            <div v-if="wrongPassword" class="text-danger mt-2 small">Incorrect password.</div>
-          </div>
-          <button type="submit" class="btn btn-primary">Enter</button>
-        </form>
+
+        <p v-if="!authReady" class="text-white-50">Checking your sign-in…</p>
+
+        <template v-else>
+          <p v-if="wrongAccount" class="text-warning">
+            Signed in as {{ authUser.email }}, which isn’t the admin account.
+          </p>
+          <button class="btn btn-primary" :disabled="signingIn" @click="signIn">
+            {{ signingIn ? 'Signing in…' : 'Sign in with Google' }}
+          </button>
+          <button v-if="authUser" class="btn btn-outline-secondary ms-2" @click="lock">
+            Sign out
+          </button>
+          <p v-if="signInError" class="text-danger mt-3 small">{{ signInError }}</p>
+        </template>
       </div>
     </div>
 
@@ -171,11 +183,11 @@
 
 <script>
 import { mapGetters } from 'vuex'
-
-const ADMIN_PASSWORD = 'sawdust'
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { auth, googleProvider, ADMIN_EMAIL } from '@/firebase'
 
 function ordinalDate (year, month, day) {
-  const suffixes = ['th','st','nd','rd']
+  const suffixes = ['th', 'st', 'nd', 'rd']
   const v = day % 100
   const suffix = suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]
   const d = new Date(year, month - 1, day)
@@ -211,9 +223,10 @@ export default {
 
   data () {
     return {
-      authenticated: localStorage.getItem('admin_auth') === 'true',
-      passwordInput: '',
-      wrongPassword: false,
+      authUser: null,
+      authReady: false,
+      signingIn: false,
+      signInError: '',
       tab: 'reservations',
       // reservation editing
       editingId: null,
@@ -233,23 +246,44 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['scheduleList', 'allReservations', 'reservationCountByShowing'])
+    ...mapGetters(['scheduleList', 'allReservations', 'reservationCountByShowing']),
+
+    // The UI gate. The REAL gate is database.rules.json, which checks the
+    // same address against the Google-verified token — so a tampered bundle
+    // buys nothing but a blank screen.
+    authenticated () {
+      return Boolean(this.authUser) && this.authUser.email === ADMIN_EMAIL
+    },
+
+    wrongAccount () {
+      return Boolean(this.authUser) && this.authUser.email !== ADMIN_EMAIL
+    }
   },
 
   methods: {
-    lock () {
-      this.authenticated = false
-      localStorage.removeItem('admin_auth')
+    async signIn () {
+      this.signingIn = true
+      this.signInError = ''
+      try {
+        await signInWithPopup(auth, googleProvider)
+      } catch (error) {
+        // auth/unauthorized-domain is the one worth naming: it means this
+        // site's domain has not been added to Firebase Auth's allowlist, and
+        // no amount of retrying fixes it.
+        this.signInError = error.code === 'auth/unauthorized-domain'
+          ? 'This domain is not authorised for sign-in yet (Firebase Console → Authentication → Settings → Authorized domains).'
+          : error.code === 'auth/popup-closed-by-user'
+            ? ''
+            : (error.message || 'Sign-in failed.')
+      } finally {
+        this.signingIn = false
+      }
     },
 
-    checkPassword () {
-      if (this.passwordInput === ADMIN_PASSWORD) {
-        this.authenticated = true
-        localStorage.setItem('admin_auth', 'true')
-        this.wrongPassword = false
-      } else {
-        this.wrongPassword = true
-      }
+    lock () {
+      signOut(auth).catch(() => {})
+      // Left over from the password gate; clear it so no stale flag lingers.
+      localStorage.removeItem('admin_auth')
     },
 
     // --- Reservations ---
@@ -464,6 +498,15 @@ export default {
   created () {
     this.$store.dispatch('listenForShowings')
     this.$store.dispatch('listenForReservations')
+
+    // Guest names/emails are a separate, admin-only read, so it can only be
+    // attached once we know who is signed in — attaching it earlier just
+    // earns a permission error.
+    onAuthStateChanged(auth, (user) => {
+      this.authUser = user ? { uid: user.uid, email: user.email } : null
+      this.authReady = true
+      if (this.authenticated) this.$store.dispatch('listenForGuests')
+    })
   }
 }
 </script>
@@ -550,7 +593,6 @@ h5 {
 
   h5 { color: var(--color-tan); margin-bottom: 1rem; }
 }
-
 
 .selected-movie-summary {
   display: flex;

@@ -14,7 +14,26 @@ console.log('• 1 - PATCH (x.x.X): Bug fixes, small tweaks, no new features');
 console.log('• 2 - MINOR (x.X.x): New features, backwards-compatible changes');
 console.log('• 3 - MAJOR (X.x.x): Breaking changes, incompatible API changes');
 
+// Non-interactive escape hatches, so a build can run without a terminal.
+// `VERSION_BUMP=minor yarn deploy` names the bump explicitly (Cinema Roll's
+// convention); with no TTY at all — CI, a script, an agent — it patches.
+// Without this the build CRASHES rather than falling back: setRawMode does
+// not exist on a non-TTY stdin, so the 20-second "auto-patch" timeout below
+// never gets the chance to fire.
+const BUMP_FROM_ENV = { patch: '1', minor: '2', major: '3' }[
+  String(process.env.VERSION_BUMP || '').toLowerCase()
+];
+
 function waitForKeypress(timeout = 20000) {
+  if (BUMP_FROM_ENV) {
+    console.log(`\nVERSION_BUMP=${process.env.VERSION_BUMP}`);
+    return Promise.resolve(BUMP_FROM_ENV);
+  }
+  if (!process.stdin.isTTY) {
+    console.log('\nNo terminal attached — defaulting to PATCH.');
+    return Promise.resolve('1');
+  }
+
   return new Promise((resolve) => {
     let timeoutId;
 
