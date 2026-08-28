@@ -18,7 +18,10 @@
       "Bash(curl -sI --max-time 10 https://dpjamgm53hi4i.cloudfront.net/og-image.jpg)",
       "Bash(curl -sI --max-time 10 https://sawdustcinema.com/og-image.jpg)",
       "Bash(dig sawdustcinema.com +short)",
-      "Bash(dig www.sawdustcinema.com +short)"
+      "Bash(dig www.sawdustcinema.com +short)",
+      "WebFetch(domain:buttondown.com)",
+      "WebSearch",
+      "WebFetch(domain:docs.buttondown.com)"
     ]
   }
 }

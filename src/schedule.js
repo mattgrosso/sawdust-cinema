@@ -1,12 +1,14 @@
 // Edit this file to set your movies and showtimes.
 // capacity: max seats per showing (15 recommended)
 // poster: URL to a movie poster image (portrait aspect ratio recommended)
+// isoDate: machine-readable date in YYYY-MM-DD format (used to sort upcoming vs. past)
 
 const schedule = [
   {
     id: 'fri-eve',
     movie: 'Pirates of the Caribbean: The Curse of the Black Pearl',
     date: 'Friday, March 20th',
+    isoDate: '2026-03-20',
     time: '7:30 PM',
     runtime: '2h 23m',
     capacity: 15,
@@ -16,6 +18,7 @@ const schedule = [
     id: 'fri-late',
     movie: 'The Mask',
     date: 'Friday, March 20th',
+    isoDate: '2026-03-20',
     time: '10:15 PM',
     runtime: '1h 41m',
     capacity: 15,
@@ -25,6 +28,7 @@ const schedule = [
     id: 'sat-morn',
     movie: "Fantastic Mr. Fox",
     date: 'Saturday, March 21st',
+    isoDate: '2026-03-21',
     time: '11:00 AM',
     runtime: '1h 27m',
     capacity: 15,
@@ -34,6 +38,7 @@ const schedule = [
     id: 'sat-lunch',
     movie: 'The Truman Show',
     date: 'Saturday, March 21st',
+    isoDate: '2026-03-21',
     time: '1:00 PM',
     runtime: '1h 43m',
     capacity: 15,
@@ -43,6 +48,7 @@ const schedule = [
     id: 'sun-mat',
     movie: 'Fried Green Tomatoes',
     date: 'Saturday, March 21st',
+    isoDate: '2026-03-21',
     time: '3:15 PM',
     runtime: '2h 10m',
     capacity: 15,
@@ -52,6 +58,7 @@ const schedule = [
     id: 'sun-eve',
     movie: 'Notting Hill',
     date: 'Saturday, March 21st',
+    isoDate: '2026-03-21',
     time: '7:00 PM',
     runtime: '2h 4m',
     capacity: 15,
@@ -61,6 +68,7 @@ const schedule = [
     id: 'sun-late',
     movie: "The Hunt for Red October",
     date: 'Saturday, March 21st',
+    isoDate: '2026-03-21',
     time: '9:30 PM',
     runtime: '2h 15m',
     capacity: 15,

@@ -60,7 +60,7 @@
             <div v-if="showingError" class="text-danger mt-2 small">Please select at least one showing.</div>
           </div>
 
-          <div class="d-grid">
+          <div class="d-grid" style="padding-bottom: 6rem;">
             <button type="submit" class="btn btn-primary btn-lg" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
               {{ submitting ? 'Reserving...' : 'Reserve My Spot' }}
@@ -91,8 +91,12 @@ export default {
   },
 
   computed: {
-    ...mapState(['rsvpModalOpen', 'rsvpPreselect', 'schedule']),
-    ...mapGetters({ spotsRemaining: 'spotsRemainingByShowing' })
+    ...mapState(['rsvpModalOpen', 'rsvpPreselect']),
+    ...mapGetters({ allShowings: 'scheduleList', spotsRemaining: 'spotsRemainingByShowing' }),
+    schedule () {
+      const today = new Date().toISOString().slice(0, 10)
+      return this.allShowings.filter(s => s.isoDate >= today)
+    }
   },
 
   watch: {
@@ -217,10 +221,12 @@ export default {
   inset: 0;
   background: rgba(42, 42, 42, 0.65);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1050;
-  padding: 1rem;
+  padding: 2rem 1rem;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
 
   .modal-box {
     background: var(--color-parchment);
@@ -228,9 +234,9 @@ export default {
     padding: 2rem;
     width: 100%;
     max-width: 520px;
-    max-height: 90vh;
-    overflow-y: auto;
     border: 1px solid var(--color-tan);
+    flex-shrink: 0;
+    margin: auto 0;
   }
 }
 </style>

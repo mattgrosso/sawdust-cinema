@@ -17,11 +17,17 @@ body {
   background-color: #280003;
 }
 
+html, body {
+  min-height: 100%;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--color-dark);
+  min-height: 100vh;
+  background-color: #280003;
 }
 
 /* Override Bootstrap primary color */

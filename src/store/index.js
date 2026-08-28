@@ -1,11 +1,10 @@
 import { createStore } from 'vuex'
 import { db } from '@/firebase'
-import { ref, push, onValue } from 'firebase/database'
-import schedule from '@/schedule'
+import { ref, push, onValue, remove, update, set } from 'firebase/database'
 
 export default createStore({
   state: {
-    schedule,
+    showings: {},
     reservations: {},
     rsvpModalOpen: false,
     rsvpPreselect: null,
@@ -13,16 +12,34 @@ export default createStore({
   },
 
   getters: {
+    scheduleList: (state) => {
+      const timeToMinutes = (t) => {
+        const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i)
+        if (!m) return 0
+        let h = parseInt(m[1])
+        const min = parseInt(m[2])
+        const ampm = m[3].toUpperCase()
+        if (ampm === 'PM' && h !== 12) h += 12
+        if (ampm === 'AM' && h === 12) h = 0
+        return h * 60 + min
+      }
+      return Object.entries(state.showings)
+        .map(([id, s]) => ({ id, ...s }))
+        .sort((a, b) => {
+          if (a.isoDate !== b.isoDate) return a.isoDate.localeCompare(b.isoDate)
+          return timeToMinutes(a.time) - timeToMinutes(b.time)
+        })
+    },
+
     reservationCountByShowing: (state) => {
       const counts = {}
-      schedule.forEach(s => { counts[s.id] = 0 })
+      Object.keys(state.showings).forEach(id => { counts[id] = 0 })
       Object.values(state.reservations).forEach(reservation => {
         if (reservation.showings) {
           Object.entries(reservation.showings).forEach(([id, seats]) => {
             if (counts[id] !== undefined) counts[id] += seats
           })
         } else if (reservation.showingIds) {
-          // legacy support for old reservations without seat counts
           reservation.showingIds.forEach(id => {
             if (counts[id] !== undefined) counts[id]++
           })
@@ -31,10 +48,10 @@ export default createStore({
       return counts
     },
 
-    spotsRemainingByShowing: (_state, getters) => {
+    spotsRemainingByShowing: (state, getters) => {
       const remaining = {}
-      schedule.forEach(s => {
-        remaining[s.id] = s.capacity - (getters.reservationCountByShowing[s.id] || 0)
+      Object.entries(state.showings).forEach(([id, s]) => {
+        remaining[id] = s.capacity - (getters.reservationCountByShowing[id] || 0)
       })
       return remaining
     },
@@ -45,6 +62,9 @@ export default createStore({
   },
 
   mutations: {
+    SET_SHOWINGS (state, showings) {
+      state.showings = showings || {}
+    },
     SET_RESERVATIONS (state, reservations) {
       state.reservations = reservations || {}
     },
@@ -60,6 +80,25 @@ export default createStore({
   },
 
   actions: {
+    listenForShowings ({ commit }) {
+      const showingsRef = ref(db, 'showings')
+      onValue(showingsRef, (snapshot) => {
+        commit('SET_SHOWINGS', snapshot.val())
+      })
+    },
+
+    async addShowing (_, showing) {
+      await push(ref(db, 'showings'), showing)
+    },
+
+    async updateShowing (_, { id, ...data }) {
+      await update(ref(db, `showings/${id}`), data)
+    },
+
+    async deleteShowing (_, id) {
+      await remove(ref(db, `showings/${id}`))
+    },
+
     listenForReservations ({ commit }) {
       const reservationsRef = ref(db, 'reservations')
       onValue(reservationsRef, (snapshot) => {
@@ -68,13 +107,20 @@ export default createStore({
     },
 
     async submitReservation (_, { name, email, showings }) {
-      const reservationsRef = ref(db, 'reservations')
-      await push(reservationsRef, {
+      await push(ref(db, 'reservations'), {
         name,
         email,
         showings,
         submittedAt: new Date().toISOString()
       })
+    },
+
+    async removeReservation (_, id) {
+      await remove(ref(db, `reservations/${id}`))
+    },
+
+    async updateReservation (_, { id, name, email, showings }) {
+      await update(ref(db, `reservations/${id}`), { name, email, showings })
     }
   },
 

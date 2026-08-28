@@ -1,0 +1,48 @@
+{
+  "rules": {
+    // Sawdust Cinema's database. Hardened 2026-08-28 after a Firebase
+    // "insecure rules" alert found it `.read: true, .write: true` at the
+    // root — meaning anyone with the URL (it ships in the public JS bundle)
+    // could not only read every RSVP but write anything anywhere, including
+    // brand-new top-level nodes. Default-deny at the root closes that: only
+    // the two nodes the app actually uses exist as far as a client is
+    // concerned.
+    //
+    // STILL OPEN, AND KNOWN: `reservations` remains publicly readable, so
+    // guests' names and email addresses are still exposed. That cannot be
+    // closed from this file alone, and the reason is worth writing down:
+    //
+    //   - The PUBLIC home page reads every reservation to compute "N spots
+    //     left" (store getters reservationCountByShowing /
+    //     spotsRemainingByShowing, used by HomeView and RsvpModal).
+    //   - The ADMIN page has no authentication at all — it is gated by a
+    //     password constant compiled into the same public bundle — so the
+    //     rules cannot tell Matt apart from a stranger.
+    //
+    // The fix is to split the guest PII out of `reservations` (leaving the
+    // seat counts the public page needs) and put the admin behind Google
+    // sign-in, which requires Firebase Auth to be enabled on this project
+    // first — it has never been initialized (CONFIGURATION_NOT_FOUND).
+    ".read": false,
+    ".write": false,
+
+    // The schedule. Public by design: it is the point of the site.
+    "showings": {
+      ".read": true,
+      ".write": true
+    },
+
+    // RSVPs. Create is public (that is the RSVP form); the admin edits and
+    // deletes through the same anonymous path, which is why write cannot be
+    // narrowed yet. The validation is what stops this node being used as
+    // free storage: a reservation must look like a reservation, and the
+    // strings are capped.
+    "reservations": {
+      ".read": true,
+      ".write": true,
+      "$id": {
+        ".validate": "!newData.exists() || (newData.hasChildren(['name', 'email', 'showings']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 200 && newData.child('email').isString() && newData.child('email').val().length <= 320)"
+      }
+    }
+  }
+}

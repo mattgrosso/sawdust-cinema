@@ -7,7 +7,10 @@
     "serve": "nodemon --watch .env --exec \"vue-cli-service serve\"",
     "build": "yarn update-version && vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "deploy": "yarn build && aws s3 sync dist/ s3://sawdust-cinema --profile home && aws cloudfront create-invalidation --distribution-id E1S2ZXGVHWW8OH --paths '/*' --profile home > invalidation_output.txt"
+    "deploy": "yarn build && aws s3 sync dist/ s3://sawdust-cinema --profile personal-deploy && aws cloudfront create-invalidation --distribution-id E1S2ZXGVHWW8OH --paths '/*' --profile personal-deploy > invalidation_output.txt",
+    "backup": "node scripts/backup-db.mjs",
+    "restore": "node scripts/restore-db.mjs",
+    "predeploy": "node scripts/backup-db.mjs --quiet || echo backup-skipped"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -56,7 +59,10 @@
       "vue/no-unused-components": "off",
       "no-trailing-spaces": "warn",
       "eol-last": "off",
-      "quotes": ["off", "double"],
+      "quotes": [
+        "off",
+        "double"
+      ],
       "semi": "off",
       "comma-dangle": "off",
       "space-before-function-paren": "warn",
