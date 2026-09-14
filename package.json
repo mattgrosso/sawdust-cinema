@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "update-version": "node src/assets/javascript/version.js",
-    "serve": "nodemon --watch .env --exec \"vue-cli-service serve\"",
-    "build": "yarn update-version && vue-cli-service build",
-    "lint": "vue-cli-service lint",
+    "serve": "vite",
+    "build": "yarn update-version && vite build",
+    "lint": "eslint --ext .js,.jsx,.vue --fix --no-error-on-unmatched-pattern src tests *.js",
     "deploy": "yarn build && aws s3 sync dist/ s3://sawdust-cinema --profile personal-deploy && aws cloudfront create-invalidation --distribution-id E1S2ZXGVHWW8OH --paths '/*' --profile personal-deploy > invalidation_output.txt",
     "backup": "node scripts/backup-db.mjs",
     "restore": "node scripts/restore-db.mjs",
-    "predeploy": "node scripts/backup-db.mjs --quiet || echo backup-skipped"
+    "predeploy": "node scripts/backup-db.mjs --quiet || echo backup-skipped",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -27,12 +28,9 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-plugin-router": "~5.0.0",
-    "@vue/cli-plugin-vuex": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
+    "@vitejs/plugin-vue": "5.2.4",
     "@vue/eslint-config-standard": "^6.1.0",
+    "autoprefixer": "^10.4.20",
     "eslint": "^7.32.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-node": "^11.1.0",
@@ -40,7 +38,7 @@
     "eslint-plugin-vue": "^8.0.3",
     "nodemon": "^3.1.14",
     "sass": "^1.32.7",
-    "sass-loader": "^12.0.0"
+    "vite": "5.4.21"
   },
   "eslintConfig": {
     "root": true,
@@ -52,7 +50,8 @@
       "@vue/standard"
     ],
     "parserOptions": {
-      "parser": "@babel/eslint-parser"
+      "parser": "@babel/eslint-parser",
+      "requireConfigFile": false
     },
     "rules": {
       "vue/multi-word-component-names": "off",
