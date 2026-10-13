@@ -15,6 +15,10 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import store from './store'
 import router from './router'
+import { trackUsage } from './utils/usage.js'
+
+// One anonymous ping per open → Bug Desk's Visitors tab (house module).
+trackUsage('sawdust-cinema')
 
 const app = createApp(App)
 app.use(store)
