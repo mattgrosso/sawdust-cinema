@@ -8,6 +8,12 @@ const routes = [
     component: HomeView
   },
   {
+    // The confirmation email's cancel link.
+    path: '/cancel/:id/:key',
+    name: 'cancel',
+    component: () => import('../views/CancelView.vue')
+  },
+  {
     path: '/admin',
     name: 'admin',
     component: () => import(/* webpackChunkName: "admin" */ '../views/AdminView.vue')

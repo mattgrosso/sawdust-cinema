@@ -7,6 +7,16 @@
         <div class="fs-1 mb-3">🎬</div>
         <h4>You're on the list!</h4>
         <p class="text-muted">See you at the shop.</p>
+        <p v-if="emailStatus === 'sending'" class="small text-muted">
+          <span class="spinner-border spinner-border-sm me-1"></span>Sending your confirmation to {{ email }}…
+        </p>
+        <p v-else-if="emailStatus === 'sent'" class="small email-note">
+          Confirmation sent to <strong>{{ email }}</strong>, with add-to-calendar links and a link to cancel.
+        </p>
+        <p v-else-if="emailStatus === 'failed'" class="small text-danger">
+          Your seats are reserved, but the confirmation email didn't go out ({{ emailError }}).
+        </p>
+        <p class="small text-muted">Need to cancel? Your reservations are listed at the top of this page.</p>
         <button class="btn btn-primary" @click="close">Close</button>
       </div>
 
@@ -60,6 +70,13 @@
             <div v-if="showingError" class="text-danger mt-2 small">Please select at least one showing.</div>
           </div>
 
+          <div v-if="canEmail" class="form-check mb-4">
+            <input v-model="wantEmail" class="form-check-input" type="checkbox" id="want-email" />
+            <label class="form-check-label" for="want-email">
+              Email me a confirmation <span class="text-muted small">(with add-to-calendar links and a way to cancel)</span>
+            </label>
+          </div>
+
           <div class="d-grid" style="padding-bottom: 6rem;">
             <button type="submit" class="btn btn-primary btn-lg" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
@@ -75,6 +92,7 @@
 
 <script>
 import { mapState, mapGetters } from 'vuex'
+import { TICKETS_API } from '@/config'
 
 export default {
   name: 'RsvpModal',
@@ -86,13 +104,17 @@ export default {
       showings: {},
       submitting: false,
       submitted: false,
-      showingError: false
+      showingError: false,
+      wantEmail: true,
+      emailStatus: '',
+      emailError: ''
     }
   },
 
   computed: {
     ...mapState(['rsvpModalOpen', 'rsvpPreselect']),
     ...mapGetters({ allShowings: 'scheduleList', spotsRemaining: 'spotsRemainingByShowing' }),
+    canEmail () { return Boolean(TICKETS_API) },
     schedule () {
       const today = new Date().toISOString().slice(0, 10)
       return this.allShowings.filter(s => s.isoDate >= today)
@@ -153,6 +175,8 @@ export default {
       this.submitting = false
       this.submitted = false
       this.showingError = false
+      this.emailStatus = ''
+      this.emailError = ''
     },
     async submit () {
       this.showingError = false
@@ -161,8 +185,9 @@ export default {
         return
       }
       this.submitting = true
+      let ticket
       try {
-        await this.$store.dispatch('submitReservation', {
+        ticket = await this.$store.dispatch('submitReservation', {
           name: this.name,
           email: this.email,
           showings: this.showings
@@ -172,12 +197,28 @@ export default {
       } finally {
         this.submitting = false
       }
+      // The seats are booked either way; the email is a courtesy on top, so
+      // its failure is a note on the success screen, not a failed RSVP.
+      if (ticket && this.wantEmail && this.canEmail) {
+        this.emailStatus = 'sending'
+        try {
+          await this.$store.dispatch('requestConfirmation', { ...ticket, email: this.email, name: this.name })
+          this.emailStatus = 'sent'
+        } catch (error) {
+          this.emailStatus = 'failed'
+          this.emailError = error.message || 'unknown error'
+        }
+      }
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.email-note {
+  color: var(--color-walnut);
+}
+
 .squeeze-note {
   font-size: 0.8rem;
   color: var(--color-walnut);

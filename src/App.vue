@@ -1,7 +1,34 @@
 <template>
   <router-view />
+  <BugButton />
+  <BugResolutionNotice />
 </template>
 
+<script>
+import { computed } from 'vue'
+import BugButton from '@/components/BugButton.vue'
+import BugResolutionNotice from '@/components/BugResolutionNotice.vue'
+
+export default {
+  name: 'App',
+  components: { BugButton, BugResolutionNotice },
+  provide () {
+    // What a bug report carries besides the words: where they were, how many
+    // screenings were up, and which reservations this browser holds (ids
+    // only — no names or emails, those stay in the private half).
+    const store = this.$store
+    const route = computed(() => this.$route.fullPath)
+    return {
+      bugSnapshot: () => ({
+        route: route.value,
+        showings: Object.keys(store.state.showings || {}).length,
+        tickets: (store.state.tickets || []).map((t) => t.id),
+        rsvpModalOpen: store.state.rsvpModalOpen
+      })
+    }
+  }
+}
+</script>
 <style lang="scss">
 :root {
   --color-espresso: #1e140e;

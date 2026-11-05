@@ -10,6 +10,13 @@
     // counts spots-left from it. `guests/<id>` holds the name and email, and
     // only the admin can read it. Splitting them is what let the private half
     // become private without taking the public schedule offline.
+    //
+    // 2026-11-05: guests can cancel and ask for a confirmation email without
+    // signing in. The RSVP form now also writes a random `key` into the
+    // private half. Whoever holds the key (the browser that reserved, or the
+    // cancel link in the email) proves it by writing it into a node nobody
+    // can read, in the same atomic update as the change it unlocks; the rule
+    // compares it with the stored one. No account, no backend for cancels.
     ".read": false,
     ".write": false,
 
@@ -24,7 +31,7 @@
     // The public half of an RSVP: which showings, how many seats, when.
     // Anyone may CREATE one (that is the RSVP form, and it is deliberately
     // open — guests do not sign in). Only the admin may change or delete an
-    // existing one.
+    // existing one, except that the key holder may mark it cancelled.
     "reservations": {
       ".read": true,
       "$id": {
@@ -34,19 +41,73 @@
           "$showingId": {
             ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 50"
           }
+        },
+        // A cancel: the guest writes the time here and their key into
+        // cancellations/<id> in one update; the key must match guests/<id>.
+        "cancelledAt": {
+          ".write": "!data.exists() && newData.exists() && newData.parent().parent().parent().child('cancellations').child($id).child('key').val() === root.child('guests').child($id).child('key').val()",
+          ".validate": "newData.isString() && newData.val().length <= 40"
         }
       }
     },
 
-    // The private half: who they are. Create is open for the same reason as
-    // above — the RSVP form writes both halves in one atomic update — but
-    // NOBODY may read this except the admin, which is the whole point of the
-    // change.
+    // The private half: who they are, and since 2026-11-05 their key. Create
+    // is open for the same reason as above — the RSVP form writes both halves
+    // in one atomic update — but NOBODY may read this except the admin, which
+    // is the whole point of the change.
     "guests": {
       ".read": "auth != null && auth.token.email === 'mattgrosso@gmail.com'",
       "$id": {
         ".write": "(!data.exists() && newData.exists()) || (auth != null && auth.token.email === 'mattgrosso@gmail.com')",
-        ".validate": "newData.hasChildren(['name', 'email']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 200 && newData.child('email').isString() && newData.child('email').val().length <= 320"
+        ".validate": "newData.hasChildren(['name', 'email']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 200 && newData.child('email').isString() && newData.child('email').val().length <= 320 && (!newData.hasChild('key') || (newData.child('key').isString() && newData.child('key').val().length >= 16 && newData.child('key').val().length <= 64))"
+      }
+    },
+
+    // Proof of a cancel (see reservations/$id/cancelledAt). Write-once, read
+    // by nobody, so the key never leaks back out.
+    "cancellations": {
+      ".read": false,
+      "$id": {
+        ".write": "!data.exists() && newData.hasChildren(['key', 'at']) && newData.child('key').val() === root.child('guests').child($id).child('key').val()",
+        ".validate": "newData.child('key').isString() && newData.child('at').isString()"
+      }
+    },
+
+    // The confirmation email's gate. The sawdust-tickets Lambda writes the
+    // guest's key here before it sends; the rule is how it checks the key
+    // without being able to read guests. Once `sent` is true the node is
+    // closed, so a reservation gets one confirmation email.
+    "emailRequests": {
+      ".read": false,
+      "$id": {
+        ".write": "data.child('sent').val() !== true && newData.hasChildren(['key', 'at']) && newData.child('key').val() === root.child('guests').child($id).child('key').val()",
+        ".validate": "newData.child('key').isString() && newData.child('at').isString()"
+      }
+    },
+
+    // The house bug button (2026-11-05): anyone may file a report through a
+    // silent anonymous session; only `yarn fetch-bug-reports` (project-owner
+    // login) reads them.
+    "bugReports": {
+      ".read": false,
+      "$id": {
+        ".write": "auth != null && !data.exists() && newData.exists()",
+        ".validate": "newData.hasChild('transcript') && newData.child('transcript').isString() && newData.child('transcript').val().length <= 5000"
+      }
+    },
+
+    // The reply to a bug report: `yarn resolve-bug-report` writes a
+    // plain-language notice under the reporter's uid, and the site shows it
+    // on their next visit. Only that uid can read its node; the only client
+    // write is flipping `seen`.
+    "bugReportResolutions": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$reportId": {
+          "seen": {
+            ".write": "auth != null && auth.uid === $uid && newData.isBoolean()"
+          }
+        }
       }
     }
   }

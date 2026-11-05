@@ -69,9 +69,9 @@
               </thead>
               <tbody>
                 <template v-for="(guest, i) in guestsFor(showing.id)" :key="guest.id">
-                  <tr v-if="editingId !== guest.id">
+                  <tr v-if="editingId !== guest.id" :class="{ 'cancelled-row': guest.cancelledAt }">
                     <td class="col-index">{{ i + 1 }}</td>
-                    <td>{{ guest.name }}</td>
+                    <td>{{ guest.name }} <span v-if="guest.cancelledAt" class="badge bg-secondary ms-1" :title="'Cancelled ' + formatDate(guest.cancelledAt)">cancelled</span></td>
                     <td class="col-email">{{ guest.email }}</td>
                     <td>{{ seatsFor(guest, showing.id) }}</td>
                     <td class="text-muted col-submitted">{{ formatDate(guest.submittedAt) }}</td>
@@ -288,11 +288,15 @@ export default {
 
     // --- Reservations ---
 
+    // Cancelled ones stay on the list, struck through, so the owner can see
+    // who dropped out; the seat counts have already given them back.
     guestsFor (showingId) {
-      return this.allReservations.filter(r =>
-        (r.showings && r.showings[showingId]) ||
-        (r.showingIds && r.showingIds.includes(showingId))
-      )
+      return this.allReservations
+        .filter(r =>
+          (r.showings && r.showings[showingId]) ||
+          (r.showingIds && r.showingIds.includes(showingId))
+        )
+        .sort((x, y) => (x.cancelledAt ? 1 : 0) - (y.cancelledAt ? 1 : 0))
     },
 
     seatsFor (guest, showingId) {
@@ -791,4 +795,6 @@ h5 {
     border-color: rgba(255, 255, 255, 0.08);
   }
 }
+.cancelled-row td { text-decoration: line-through; opacity: 0.55; }
+.cancelled-row td .badge { text-decoration: none; }
 </style>

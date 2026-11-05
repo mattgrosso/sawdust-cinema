@@ -18,6 +18,30 @@
           </form>
         </div>
 
+        <div v-if="mine.length > 0" class="my-reservations">
+          <h3 class="day-heading">Your reservations</h3>
+          <div v-for="r in mine" :key="r.id" class="my-reservation" :class="{ cancelled: r.cancelledAt }">
+            <div class="my-reservation-lines">
+              <div v-for="line in linesFor(r)" :key="line.id">
+                <strong>{{ line.movie }}</strong>
+                <span class="text-muted small ms-2">{{ line.date }} &bull; {{ line.time }}</span>
+                <span class="small ms-2">{{ line.seats }} {{ line.seats === 1 ? 'seat' : 'seats' }}</span>
+              </div>
+            </div>
+            <div class="my-reservation-actions">
+              <span v-if="r.cancelledAt" class="badge bg-secondary">Cancelled</span>
+              <template v-else-if="cancelling === r.id">
+                <span class="small me-2">Cancel these seats?</span>
+                <button class="btn btn-sm btn-primary me-1" :disabled="busy" @click="confirmCancel(r)">Yes, cancel</button>
+                <button class="btn btn-sm btn-outline-secondary" :disabled="busy" @click="cancelling = null">Keep</button>
+              </template>
+              <button v-else class="btn btn-sm btn-outline-secondary" @click="cancelling = r.id">Cancel</button>
+              <button v-if="r.cancelledAt" class="btn btn-sm btn-link text-muted" @click="forget(r.id)">Hide</button>
+            </div>
+          </div>
+          <p v-if="cancelError" class="text-danger small">{{ cancelError }}</p>
+        </div>
+
         <template v-if="upcomingByDate.length > 0">
           <div v-for="group in upcomingByDate" :key="group.date" class="day-section">
             <h3 class="day-heading">{{ group.date }}</h3>
@@ -86,9 +110,17 @@ export default {
   name: 'HomeView',
   components: { RsvpModal },
 
+  data () {
+    return { cancelling: null, busy: false, cancelError: '' }
+  },
+
   computed: {
     version () { return process.env.VUE_APP_VERSION },
-    ...mapGetters({ schedule: 'scheduleList', spotsRemaining: 'spotsRemainingByShowing' }),
+    ...mapGetters({ schedule: 'scheduleList', spotsRemaining: 'spotsRemainingByShowing', myReservations: 'myReservations' }),
+    // Only reservations with a screening still to come; past ones fall off.
+    mine () {
+      return this.myReservations.filter(r => this.linesFor(r).some(l => l.isoDate >= this.today))
+    },
     upcomingByDate () {
       return this.groupByDate(this.schedule.filter(s => s.isoDate >= this.today))
     },
@@ -101,6 +133,28 @@ export default {
   },
 
   methods: {
+    linesFor (r) {
+      return Object.entries(r.showings || {})
+        .map(([id, seats]) => ({ id, seats, ...(this.$store.state.showings[id] || { movie: 'A screening that was removed', date: '', time: '', isoDate: '9999' }) }))
+        .sort((a, b) => a.isoDate.localeCompare(b.isoDate))
+    },
+    async confirmCancel (r) {
+      this.busy = true
+      this.cancelError = ''
+      try {
+        await this.$store.dispatch('cancelReservation', { id: r.id, key: r.key })
+        this.cancelling = null
+      } catch (error) {
+        this.cancelError = /permission/i.test(error.message || '')
+          ? 'That reservation could not be cancelled from here. Use the link in your confirmation email, or just tell us at the door.'
+          : (error.message || 'Could not cancel.')
+      } finally {
+        this.busy = false
+      }
+    },
+    forget (id) {
+      this.$store.dispatch('forgetTicket', id)
+    },
     groupByDate (showings) {
       const groups = []
       showings.forEach(showing => {
@@ -172,6 +226,36 @@ h2 {
 
 .day-section {
   margin-bottom: 2.5rem;
+}
+
+.my-reservations {
+  margin-bottom: 2.5rem;
+}
+
+.my-reservation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-tan);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.6rem;
+  color: var(--color-espresso);
+
+  &.cancelled .my-reservation-lines {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  .my-reservation-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
 }
 
 .day-heading {
