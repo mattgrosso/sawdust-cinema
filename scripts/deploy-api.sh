@@ -27,7 +27,7 @@ else
   $AWS lambda create-function-url-config --function-name $F --auth-type NONE \
     --cors 'AllowOrigins=https://www.sawdustcinema.com,https://sawdustcinema.com,http://localhost:8080,AllowMethods=POST,AllowHeaders=content-type,MaxAge=3600' >/dev/null
   $AWS lambda add-permission --function-name $F --statement-id public-url --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE >/dev/null
-  $AWS lambda add-permission --function-name $F --statement-id public-invoke --action lambda:InvokeFunction --principal '*' >/dev/null 2>&1 || true
+  $AWS lambda add-permission --function-name $F --statement-id public-invoke --action lambda:InvokeFunction --principal '*' --invoked-via-function-url >/dev/null 2>&1 || true
 fi
 rm -f api.zip
 $AWS lambda get-function-url-config --function-name $F --query FunctionUrl --output text
