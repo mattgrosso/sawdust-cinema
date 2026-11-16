@@ -167,10 +167,42 @@
             <span class="showing-movie">{{ showing.movie }}</span>
             <span class="showing-meta">{{ showing.date }} &bull; {{ showing.time }}</span>
             <span class="showing-meta">{{ countFor(showing.id) }} / {{ showing.capacity }} reserved</span>
+            <span v-if="showing.announcedAt" class="showing-meta showing-announced">Announced {{ formatDate(showing.announcedAt) }}</span>
           </div>
           <div class="showing-actions">
+            <button class="action-btn me-1" @click="startAnnounce(showing)">Announce</button>
             <button class="action-btn me-1" @click="startShowingEdit(showing)">Edit</button>
             <button class="action-btn action-btn--danger" @click="removeShowing(showing.id)">Delete</button>
+          </div>
+        </div>
+
+        <!-- Announce: the newsletter email for one screening, editable, then
+             one tap sends it to every Buttondown subscriber. -->
+        <div v-if="announcing" class="announce-backdrop" @click.self="closeAnnounce">
+          <div class="announce-panel">
+            <template v-if="announceSent">
+              <h5>Sent</h5>
+              <p class="announce-note">Buttondown is mailing {{ announcing.movie }} to {{ subscriberWord }}.</p>
+              <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" @click="closeAnnounce">Done</button>
+              </div>
+            </template>
+            <template v-else>
+              <h5>Announce {{ announcing.movie }}</h5>
+              <p v-if="announcing.announcedAt" class="announce-warn">You already announced this on {{ formatDate(announcing.announcedAt) }}.</p>
+              <label class="form-label">Subject</label>
+              <input v-model="announceSubject" class="form-control mb-3" />
+              <label class="form-label">Email <span class="field-hint">(Markdown: [words](link) makes a link)</span></label>
+              <textarea v-model="announceBody" class="form-control announce-body" rows="9"></textarea>
+              <p v-if="announceError" class="text-danger small mt-2 mb-0">{{ announceError }}</p>
+              <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+                <button class="btn btn-outline-secondary" :disabled="announceBusy" @click="closeAnnounce">Cancel</button>
+                <button class="btn btn-primary" :disabled="announceBusy || !announceSubject.trim() || !announceBody.trim()" @click="sendAnnounce">
+                  <span v-if="announceBusy" class="spinner-border spinner-border-sm me-2"></span>
+                  Send to {{ subscriberWord }}
+                </button>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -185,6 +217,7 @@
 import { mapGetters } from 'vuex'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider, ADMIN_EMAIL } from '@/firebase'
+import { composeAnnouncement } from '@/announce'
 
 function ordinalDate (year, month, day) {
   const suffixes = ['th', 'st', 'nd', 'rd']
@@ -241,7 +274,15 @@ export default {
       // poster search
       posterResults: [],
       searchingPosters: false,
-      posterSearchError: null
+      posterSearchError: null,
+      // announce
+      announcing: null,
+      announceSubject: '',
+      announceBody: '',
+      announceBusy: false,
+      announceError: '',
+      announceSent: false,
+      subscribers: null
     }
   },
 
@@ -257,6 +298,11 @@ export default {
 
     wrongAccount () {
       return Boolean(this.authUser) && this.authUser.email !== ADMIN_EMAIL
+    },
+
+    subscriberWord () {
+      if (this.subscribers == null) return 'subscribers'
+      return `${this.subscribers} ${this.subscribers === 1 ? 'subscriber' : 'subscribers'}`
     }
   },
 
@@ -490,6 +536,44 @@ export default {
         this.form = emptyForm()
       } finally {
         this.savingShowing = false
+      }
+    },
+
+    // --- Announce ---
+
+    async startAnnounce (showing) {
+      const { subject, body } = composeAnnouncement(showing)
+      this.announcing = showing
+      this.announceSubject = subject
+      this.announceBody = body
+      this.announceError = ''
+      this.announceSent = false
+      try {
+        const idToken = await auth.currentUser.getIdToken()
+        const { subscribers } = await this.$store.dispatch('announce', { idToken, check: true })
+        this.subscribers = subscribers
+      } catch (e) {
+        this.announceError = e.message
+      }
+    },
+
+    closeAnnounce () {
+      if (this.announceBusy) return
+      this.announcing = null
+    },
+
+    async sendAnnounce () {
+      this.announceBusy = true
+      this.announceError = ''
+      try {
+        const idToken = await auth.currentUser.getIdToken()
+        await this.$store.dispatch('announce', { idToken, subject: this.announceSubject, body: this.announceBody })
+        this.announceSent = true
+        await this.$store.dispatch('updateShowing', { id: this.announcing.id, announcedAt: new Date().toISOString() }).catch(() => {})
+      } catch (e) {
+        this.announceError = e.message
+      } finally {
+        this.announceBusy = false
       }
     },
 
@@ -795,6 +879,34 @@ h5 {
     border-color: rgba(255, 255, 255, 0.08);
   }
 }
+.showing-announced { color: var(--color-tan); }
+
+.announce-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1050;
+}
+
+.announce-panel {
+  background: #3a0a0c;
+  border: 1px solid rgba(212, 169, 122, 0.35);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.announce-body { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; }
+.announce-note { color: #fff; }
+.announce-warn { color: #ffc107; font-size: 0.85rem; }
+
 .cancelled-row td { text-decoration: line-through; opacity: 0.55; }
 .cancelled-row td .badge { text-decoration: none; }
 </style>

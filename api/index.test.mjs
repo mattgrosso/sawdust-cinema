@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { composeEmail } from './index.mjs'
+import { describe, it, expect, afterEach } from 'vitest'
+import { composeEmail, handler } from './index.mjs'
 
 const lines = [
   { id: 'fri-eve', movie: 'Pirates of the Caribbean', date: 'Friday, March 20th', isoDate: '2026-03-20', time: '7:30 PM', runtime: '2h 23m' },
@@ -29,5 +29,49 @@ describe('the confirmation email', () => {
     const one = composeEmail({ id: 'x', key: 'k'.repeat(24), name: '', showings: { 'fri-eve': 1 }, lines: [lines[0]] })
     expect(one.subject).toBe('Your seats for Pirates of the Caribbean at Sawdust Cinema')
     expect(one.text).toContain('Hi there,')
+  })
+})
+
+describe('the announce route', () => {
+  const call = (body) => handler({ requestContext: { http: { method: 'POST' } }, rawPath: '/announce', body: JSON.stringify(body) })
+  const token = 'aaa.bbb.ccc'
+  const stub = (dbOk) => {
+    const sent = []
+    globalThis.fetch = async (url, init = {}) => {
+      if (String(url).includes('firebaseio.com')) return { ok: dbOk, status: dbOk ? 200 : 401, json: async () => ({}) }
+      sent.push({ url: String(url), init })
+      if (String(url).includes('/subscribers')) return { ok: true, status: 200, json: async () => ({ count: 22 }) }
+      return { ok: true, status: 201, json: async () => ({ id: 'em_1', status: 'about_to_send' }) }
+    }
+    return sent
+  }
+  const realFetch = globalThis.fetch
+  afterEach(() => { globalThis.fetch = realFetch; delete process.env.BUTTONDOWN_API_KEY })
+
+  it('refuses anyone the database will not let read the guest list', async () => {
+    process.env.BUTTONDOWN_API_KEY = 'k'
+    const sent = stub(false)
+    const r = await call({ idToken: token, subject: 's', body: 'b' })
+    expect(r.statusCode).toBe(403)
+    expect(sent).toHaveLength(0)
+  })
+  it('counts subscribers without sending on a check', async () => {
+    process.env.BUTTONDOWN_API_KEY = 'k'
+    const sent = stub(true)
+    const r = await call({ idToken: token, check: true })
+    expect(JSON.parse(r.body)).toEqual({ subscribers: 22 })
+    expect(sent.some((s) => s.url.endsWith('/emails'))).toBe(false)
+  })
+  it('sends the admin\'s subject and body straight away', async () => {
+    process.env.BUTTONDOWN_API_KEY = 'k'
+    const sent = stub(true)
+    const r = await call({ idToken: token, subject: 'Jaws at Sawdust Cinema', body: 'Bring a bigger boat.' })
+    expect(r.statusCode).toBe(200)
+    const mail = sent.find((s) => s.url.endsWith('/emails'))
+    expect(JSON.parse(mail.init.body)).toEqual({ subject: 'Jaws at Sawdust Cinema', body: 'Bring a bigger boat.', status: 'about_to_send' })
+  })
+  it('says so when the key is missing', async () => {
+    stub(true)
+    expect((await call({ idToken: token, subject: 's', body: 'b' })).statusCode).toBe(503)
   })
 })

@@ -203,6 +203,21 @@ export default createStore({
       return body
     },
 
+    // The admin's Announce button: the Lambda sends it through Buttondown
+    // after checking this sign-in can read the guest list (api/index.mjs).
+    // `check` only asks how many subscribers it would reach.
+    async announce (_, { idToken, subject, body, check = false }) {
+      if (!TICKETS_API) throw new Error('The newsletter is not set up.')
+      const response = await fetch(`${TICKETS_API}/announce`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ idToken, subject, body, check })
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.error || `Could not send it (${response.status}).`)
+      return result
+    },
+
     // Both halves go together, or the guest list keeps a name for an RSVP
     // that no longer exists.
     async removeReservation (_, id) {

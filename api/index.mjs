@@ -100,9 +100,53 @@ const send = async ({ to, subject, text, html, ics, id }) => {
   return body.id
 }
 
+// --- POST /announce { idToken, subject?, body?, check? } ---
+// The admin page's Announce button. Sends a screening announcement to every
+// Buttondown subscriber. Only the admin can: the Lambda has no Firebase
+// credential, so it asks the database itself whether this ID token may read
+// the admin-only `guests` node (the rules check the Google-verified email).
+// `check: true` only answers how many subscribers it would go to.
+const BUTTONDOWN = 'https://api.buttondown.com/v1'
+const buttondown = (path, init = {}) => fetch(`${BUTTONDOWN}${path}`, {
+  ...init,
+  headers: { authorization: `Token ${process.env.BUTTONDOWN_API_KEY}`, 'content-type': 'application/json', ...(init.headers || {}) }
+})
+
+export const isAdmin = async (idToken) => {
+  if (!/^[\w-]+\.[\w-]+\.[\w-]+$/.test(idToken || '')) return false
+  const r = await fetch(`${DB}/guests.json?shallow=true&auth=${encodeURIComponent(idToken)}`)
+  return r.ok
+}
+
+const announce = async (body) => {
+  if (!process.env.BUTTONDOWN_API_KEY) return reply(503, { error: 'the newsletter isn\'t set up yet' })
+  if (!(await isAdmin(String(body.idToken || '')))) return reply(403, { error: 'only the admin can send the newsletter; sign in again' })
+  if (body.check) {
+    const r = await buttondown('/subscribers?type=regular')
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok) return reply(502, { error: `Buttondown said ${r.status}` })
+    return reply(200, { subscribers: d.count ?? null })
+  }
+  const subject = String(body.subject || '').trim().slice(0, 300)
+  const text = String(body.body || '').trim().slice(0, 20000)
+  if (!subject || !text) return reply(400, { error: 'the email needs a subject and some words' })
+  const r = await buttondown('/emails', { method: 'POST', body: JSON.stringify({ subject, body: text, status: 'about_to_send' }) })
+  const d = await r.json().catch(() => ({}))
+  if (!r.ok) {
+    console.error('buttondown failed', r.status, JSON.stringify(d).slice(0, 500))
+    return reply(502, { error: typeof d.detail === 'string' ? d.detail : `Buttondown said ${r.status}` })
+  }
+  return reply(200, { ok: true, id: d.id, status: d.status })
+}
+
 export async function handler (event) {
   const method = event.requestContext?.http?.method || 'GET'
   const path = event.rawPath || ''
+  if (method === 'POST' && path.endsWith('/announce')) {
+    let body = {}
+    try { body = JSON.parse(event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString() : (event.body || '{}')) } catch { return reply(400, { error: 'Bad JSON' }) }
+    return announce(body)
+  }
   if (method !== 'POST' || !path.endsWith('/confirm')) return reply(404, { error: 'Not found' })
   if (!process.env.RESEND_API_KEY) return reply(503, { error: 'email isn\'t set up yet' })
   let body = {}
