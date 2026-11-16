@@ -68,6 +68,7 @@ describe('the announce route', () => {
     const r = await call({ idToken: token, subject: 'Jaws at Sawdust Cinema', body: 'Bring a bigger boat.' })
     expect(r.statusCode).toBe(200)
     const mail = sent.find((s) => s.url.endsWith('/emails'))
+    expect(mail.init.headers['X-Buttondown-Live-Dangerously']).toBe('true')
     expect(JSON.parse(mail.init.body)).toEqual({ subject: 'Jaws at Sawdust Cinema', body: 'Bring a bigger boat.', status: 'about_to_send' })
   })
   it('says so when the key is missing', async () => {

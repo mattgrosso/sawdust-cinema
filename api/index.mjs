@@ -130,7 +130,9 @@ const announce = async (body) => {
   const subject = String(body.subject || '').trim().slice(0, 300)
   const text = String(body.body || '').trim().slice(0, 20000)
   if (!subject || !text) return reply(400, { error: 'the email needs a subject and some words' })
-  const r = await buttondown('/emails', { method: 'POST', body: JSON.stringify({ subject, body: text, status: 'about_to_send' }) })
+  // Buttondown refuses an API send without this header (once per key): it
+  // is their "yes, really mail the list" switch, and the Send button is ours.
+  const r = await buttondown('/emails', { method: 'POST', headers: { 'X-Buttondown-Live-Dangerously': 'true' }, body: JSON.stringify({ subject, body: text, status: 'about_to_send' }) })
   const d = await r.json().catch(() => ({}))
   if (!r.ok) {
     console.error('buttondown failed', r.status, JSON.stringify(d).slice(0, 500))
