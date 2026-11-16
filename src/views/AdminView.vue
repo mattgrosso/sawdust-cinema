@@ -44,8 +44,8 @@
 
       <!-- Reservations tab -->
       <div v-if="tab === 'reservations'">
-        <div v-if="scheduleList.length === 0" class="text-muted fst-italic">No screenings defined yet.</div>
-        <div v-for="showing in scheduleList" :key="showing.id" class="mb-5">
+        <div v-if="adminList.length === 0" class="text-muted fst-italic">No screenings defined yet.</div>
+        <div v-for="showing in adminList" :key="showing.id" class="mb-5">
           <h5 class="border-bottom pb-2">
             {{ showing.movie }}
             <span class="text-muted fw-normal fs-6 ms-2">{{ showing.date }} &bull; {{ showing.time }}</span>
@@ -161,8 +161,8 @@
         </div>
 
         <!-- Existing screenings list -->
-        <div v-if="scheduleList.length === 0" class="text-muted fst-italic">No screenings yet.</div>
-        <div v-for="showing in scheduleList" :key="showing.id" class="showing-row-admin">
+        <div v-if="adminList.length === 0" class="text-muted fst-italic">No screenings yet.</div>
+        <div v-for="showing in adminList" :key="showing.id" class="showing-row-admin">
           <div class="showing-info">
             <span class="showing-movie">{{ showing.movie }}</span>
             <span class="showing-meta">{{ showing.date }} &bull; {{ showing.time }}</span>
@@ -298,6 +298,12 @@ export default {
 
     wrongAccount () {
       return Boolean(this.authUser) && this.authUser.email !== ADMIN_EMAIL
+    },
+
+    // Newest first on both tabs, so the coming screenings sit at the top
+    // and the old ones fall to the bottom (the home page keeps date order).
+    adminList () {
+      return [...this.scheduleList].reverse()
     },
 
     subscriberWord () {
