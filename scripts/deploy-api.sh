@@ -14,7 +14,7 @@ BUTTONDOWN_API_KEY=""
 [ -f "$KEYS" ] && . "$KEYS"
 [ -n "$RESEND_API_KEY" ] || echo "note: no RESEND_API_KEY in $KEYS - the route will answer 503 until there is one" >&2
 rm -f api.zip && (cd api && zip -q ../api.zip index.mjs calendar.mjs package.json)
-ENV="Variables={RESEND_API_KEY=$RESEND_API_KEY,BUTTONDOWN_API_KEY=$BUTTONDOWN_API_KEY,MAIL_FROM=Sawdust Cinema <tickets@sawdustcinema.com>,REPLY_TO=${REPLY_TO:-mattgrosso@gmail.com},SITE_URL=https://www.sawdustcinema.com,DATABASE_URL=https://sawdust-cinema-default-rtdb.firebaseio.com}"
+ENV="Variables={RESEND_API_KEY=$RESEND_API_KEY,BUTTONDOWN_API_KEY=$BUTTONDOWN_API_KEY,MAIL_FROM=Sawdust Cinema <tickets@sawdustcinema.com>,REPLY_TO=${REPLY_TO:-mattgrosso@gmail.com},NOTIFY_TO=${NOTIFY_TO:-mattgrosso@gmail.com},SITE_URL=https://www.sawdustcinema.com,DATABASE_URL=https://sawdust-cinema-default-rtdb.firebaseio.com}"
 if $AWS lambda get-function --function-name $F >/dev/null 2>&1; then
   $AWS lambda update-function-code --function-name $F --zip-file fileb://api.zip >/dev/null
   $AWS lambda wait function-updated --function-name $F

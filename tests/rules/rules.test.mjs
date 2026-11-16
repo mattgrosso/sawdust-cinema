@@ -51,6 +51,15 @@ describe('the email gate', () => {
   })
 })
 
+describe('the owner notice gate', () => {
+  it('opens once, for the right key only', async () => {
+    expect((await call('PUT', `notices/${id}`, { key: 'wrong-wrong-wrong-wrong', at: 'now' })).status).toBe(401)
+    expect((await call('PUT', `notices/${id}`, { key: KEY, at: 'now' })).status).toBe(200)
+    expect((await call('PUT', `notices/${id}`, { key: KEY, at: 'again' })).status).toBe(401)
+    expect((await call('GET', `notices/${id}`)).status).toBe(401)
+  })
+})
+
 describe('cancelling', () => {
   const cancel = (key) => call('PATCH', '', { [`reservations/${id}/cancelledAt`]: '2026-11-05T13:00:00Z', [`cancellations/${id}`]: { key, at: '2026-11-05T13:00:00Z' } })
   it('is refused with a wrong key', async () => {

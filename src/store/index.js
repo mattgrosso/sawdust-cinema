@@ -203,6 +203,22 @@ export default createStore({
       return body
     },
 
+    // Tell the owner someone reserved (api/index.mjs /notify). Best effort:
+    // the guest never sees it, so a failure is only a console line.
+    async notifyOwner (_, { id, key, name, email }) {
+      if (!TICKETS_API) return
+      try {
+        await fetch(`${TICKETS_API}/notify`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, key, name, email }),
+          keepalive: true
+        })
+      } catch (error) {
+        console.warn('owner notice failed', error.message)
+      }
+    },
+
     // The admin's Announce button: the Lambda sends it through Buttondown
     // after checking this sign-in can read the guest list (api/index.mjs).
     // `check` only asks how many subscribers it would reach.

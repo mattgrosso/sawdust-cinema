@@ -192,6 +192,7 @@ export default {
           email: this.email,
           showings: this.showings
         })
+        this.$store.dispatch('notifyOwner', { ...ticket, email: this.email, name: this.name })
         localStorage.setItem('sawdust-rsvp-user', JSON.stringify({ name: this.name, email: this.email }))
         this.submitted = true
       } finally {

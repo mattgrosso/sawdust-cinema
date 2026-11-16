@@ -85,6 +85,17 @@
       }
     },
 
+    // The owner's "someone reserved" email (2026-11-16). Same proof as the
+    // confirmation gate, but it can only be written once, so a reservation
+    // makes one notice and a stranger cannot make any.
+    "notices": {
+      ".read": false,
+      "$id": {
+        ".write": "!data.exists() && newData.hasChildren(['key', 'at']) && newData.child('key').val() === root.child('guests').child($id).child('key').val()",
+        ".validate": "newData.child('key').isString() && newData.child('at').isString()"
+      }
+    },
+
     // The house bug button (2026-11-05): anyone may file a report through a
     // silent anonymous session; only `yarn fetch-bug-reports` (project-owner
     // login) reads them.

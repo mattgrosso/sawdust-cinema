@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { composeEmail, handler } from './index.mjs'
+import { composeEmail, composeNotice, handler } from './index.mjs'
 
 const lines = [
   { id: 'fri-eve', movie: 'Pirates of the Caribbean', date: 'Friday, March 20th', isoDate: '2026-03-20', time: '7:30 PM', runtime: '2h 23m' },
@@ -74,5 +74,14 @@ describe('the announce route', () => {
   it('says so when the key is missing', async () => {
     stub(true)
     expect((await call({ idToken: token, subject: 's', body: 'b' })).statusCode).toBe(503)
+  })
+})
+
+describe('the owner notice', () => {
+  it('says who, how many, and how full', () => {
+    const { subject, text } = composeNotice({ name: 'Pat Sawyer', email: 'pat@example.com', showings: { 'fri-eve': 2 }, lines: [{ ...lines[0], capacity: 15 }], taken: { 'fri-eve': 9 } })
+    expect(subject).toBe('Pat Sawyer reserved 2 for Pirates of the Caribbean')
+    expect(text).toContain('Pat Sawyer <pat@example.com> just reserved:')
+    expect(text).toContain('Friday, March 20th at 7:30 PM: 2 seats (now 9/15 reserved)')
   })
 })

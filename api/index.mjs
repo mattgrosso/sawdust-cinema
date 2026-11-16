@@ -141,6 +141,52 @@ const announce = async (body) => {
   return reply(200, { ok: true, id: d.id, status: d.status })
 }
 
+// --- POST /notify { id, key, name, email } ---
+// Tells Matt someone reserved: who, how many seats, and how full each
+// screening is now. Sent from the RSVP form right after the booking, proven
+// with the guest's key through the one-time `notices/<id>` gate, so each
+// reservation makes exactly one notice.
+const NOTIFY_TO = process.env.NOTIFY_TO || ''
+
+export const composeNotice = ({ name, email, showings, lines, taken }) => {
+  const total = Object.values(showings).reduce((a, n) => a + n, 0)
+  const who = name || 'Someone'
+  const rows = lines.map((l) => `${l.movie}, ${whenText(l)}: ${showings[l.id]} ${showings[l.id] === 1 ? 'seat' : 'seats'} (now ${taken[l.id] || 0}/${l.capacity || 15} reserved)`)
+  const subject = lines.length === 1
+    ? `${who} reserved ${total} for ${lines[0].movie}`
+    : `${who} reserved seats for ${lines.length} screenings`
+  const text = [`${who}${email ? ` <${email}>` : ''} just reserved:`, '', ...rows, '', `Guest list: ${SITE}/#/admin`].join('\n')
+  return { subject, text }
+}
+
+const notify = async (body) => {
+  if (!process.env.RESEND_API_KEY || !NOTIFY_TO) return reply(503, { error: 'notices aren\'t set up' })
+  const id = String(body.id || ''); const key = String(body.key || '')
+  if (!/^[-\w]{10,40}$/.test(id) || !/^[a-z0-9]{16,64}$/.test(key)) return reply(400, { error: 'bad reservation' })
+  const reservation = await readDb(`reservations/${id}`)
+  if (!reservation?.showings) return reply(404, { error: 'reservation not found' })
+  const status = await fetch(`${DB}/notices/${encodeURIComponent(id)}.json`, { method: 'PUT', body: JSON.stringify({ key, at: new Date().toISOString() }) }).then((r) => r.status)
+  if (status !== 200) return reply(403, { error: 'already noticed, or not yours' })
+  const all = (await readDb('showings')) || {}
+  const everyone = (await readDb('reservations')) || {}
+  const taken = {}
+  for (const r of Object.values(everyone)) {
+    if (r.cancelledAt) continue
+    for (const [sid, n] of Object.entries(r.showings || {})) taken[sid] = (taken[sid] || 0) + n
+  }
+  const lines = Object.keys(reservation.showings).map((sid) => ({ id: sid, ...(all[sid] || { movie: 'A screening', isoDate: '2000-01-01', time: '7:00 PM', date: '' }) })).sort((a, b) => a.isoDate.localeCompare(b.isoDate))
+  const name = String(body.name || '').trim().slice(0, 200)
+  const email = String(body.email || '').trim().slice(0, 320)
+  const { subject, text } = composeNotice({ name, email: EMAIL.test(email) ? email : '', showings: reservation.showings, lines, taken })
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ from: FROM, to: [NOTIFY_TO], subject, text, ...(EMAIL.test(email) ? { reply_to: email } : {}) })
+  })
+  if (!r.ok) { console.error('notice failed', r.status); return reply(502, { error: 'the notice could not be sent' }) }
+  return reply(200, { ok: true })
+}
+
 export async function handler (event) {
   const method = event.requestContext?.http?.method || 'GET'
   const path = event.rawPath || ''
@@ -148,6 +194,11 @@ export async function handler (event) {
     let body = {}
     try { body = JSON.parse(event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString() : (event.body || '{}')) } catch { return reply(400, { error: 'Bad JSON' }) }
     return announce(body)
+  }
+  if (method === 'POST' && path.endsWith('/notify')) {
+    let body = {}
+    try { body = JSON.parse(event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString() : (event.body || '{}')) } catch { return reply(400, { error: 'Bad JSON' }) }
+    return notify(body)
   }
   if (method !== 'POST' || !path.endsWith('/confirm')) return reply(404, { error: 'Not found' })
   if (!process.env.RESEND_API_KEY) return reply(503, { error: 'email isn\'t set up yet' })

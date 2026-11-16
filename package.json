@@ -1,6 +1,6 @@
 {
   "name": "sawdust-cinema",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "update-version": "node src/assets/javascript/version.js",
