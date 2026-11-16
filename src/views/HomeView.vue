@@ -280,7 +280,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1rem 4.5rem 1rem 1.5rem; // right side clears the fixed bug button
 }
 
 .version-label {
